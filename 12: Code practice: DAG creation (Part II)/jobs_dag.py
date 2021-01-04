@@ -19,5 +19,4 @@ for dict in config:
 		task2 = DummyOperator(task_id='insert_new_row')
 		task3 = DummyOperator(task_id='query_the_table')
 		dag >> task1 >> task2 >> task3
-		globals()[dict] = dag
 
