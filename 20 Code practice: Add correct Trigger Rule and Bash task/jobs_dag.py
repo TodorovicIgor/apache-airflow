@@ -20,6 +20,9 @@ def check_table_exists():
 		return 'insert_new_row'
 	return 'create_table'
 
+def push_to_xcom(**kwargs):
+	kwargs['ti'].xcom_push(key='msg', value='{{ run_id }} ended')
+
 for dict in config:
 	with DAG(dict, default_args=config[dict]) as dag:
 		print_task = PythonOperator(task_id='print_process_start', python_callable=DB_task, op_kwargs={'dag_id':dict, 'database': 'db_test'})
@@ -28,9 +31,12 @@ for dict in config:
 		create_table_task = DummyOperator(task_id='create_table')
 		insert_task = DummyOperator(task_id='insert_new_row', trigger_rule='none_failed')
 		query_task = DummyOperator(task_id='query_the_table')
+		push_to_xcom_done = PythonOperator(task_id='push_to_xcom', python_callable=push_to_xcom, provide_context=True)
+
 
 		dag >> print_task >> get_user >> branch_task >> [create_table_task, insert_task]
 		create_table_task >> insert_task
 		insert_task >> query_task
+		[insert_task, query_task] >> push_to_xcom_done
 		globals()[dict] = dag
 
